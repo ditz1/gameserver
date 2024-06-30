@@ -17,20 +17,13 @@ std::vector<SocketPtr> Server::CurrentClients() {
     return _clients;
 }
 
-void Server::ProcessResponse(unsigned char data[2], int clientId) {
-    res_data res;
-    res.bytes.b1 = data[0];
-    res.bytes.b0 = data[1];
-    
-    if (res.bytes.b0 == 0x61 && res.bytes.b0 == 0x62) {
-        std::string response = "Client " + std::to_string(clientId) + " sent ab!";
-    } else if (res.bytes.b0 == 0xd && res.bytes.b1 == 0xa){
-        std::string response = "Client " + std::to_string(clientId) + " send end of response ('0xd > 0xa')";
-    } else {
-        std::string response = "Client " + std::to_string(clientId) + " sent: ";
-        printf("0x%x 0x%x\n", res.bytes.b0, res.bytes.b1);
-        std::cout << response << std::endl;
-    }
+PlayerData Server::DecodePlayerData(const std::string& data, int clientId) {
+
+}
+
+void Server::ProcessResponse(const std::string& data, int clientId) {
+
+    std::cout << "Received data from client " << clientId << ": " << data << std::endl;
 }
 
 // server.cpp
@@ -54,9 +47,18 @@ void Server::DoAccept() {
 // HANDLE CONNECTION WILL NOT SEND ANYTHING BACK TO THE CLIENT
 void Server::HandleConnection(SocketPtr socket, int clientId) {
     try {
+        boost::asio::streambuf buffer;
         while (true) {
-            unsigned char data[2]; // data we want
-            boost::asio::read(*socket, boost::asio::buffer(data, 2));
+            // Read data until a newline character is encountered
+            boost::asio::read_until(*socket, buffer, '\n');
+
+            // Extract the data from the buffer
+            std::string data = boost::asio::buffer_cast<const char*>(buffer.data());
+
+            // Remove the data from the buffer
+            buffer.consume(buffer.size());
+
+            // Process the response
             ProcessResponse(data, clientId);
         }
     } catch (std::exception const& e) {

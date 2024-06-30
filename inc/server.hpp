@@ -2,6 +2,7 @@
 #include <boost/asio.hpp>
 #include <string>
 #include <vector>
+#include "player.hpp" // has game protocol
 
 typedef std::shared_ptr<boost::asio::ip::tcp::socket> SocketPtr;
 
@@ -20,8 +21,8 @@ public:
     void SendToAll(const std::string& message);
     void SendToClient(const std::string& message, int clientId);
     std::vector<SocketPtr> CurrentClients();
-    void ProcessResponse(unsigned char data[2], int clientId);
-
+    void ProcessResponse(const std::string& data, int clientId);
+    PlayerData DecodePlayerData(const std::string& data, int clientId); 
     inline int ClientCount() { return _clients.size(); }
 
 private:
