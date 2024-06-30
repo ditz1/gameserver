@@ -68,34 +68,34 @@ def main():
             if command.lower() == 'q':
                 break
             elif command.lower() == 'ml':
-                player.data.mv_dir = 2
+                player.mv_dir = 2
                 send_command(client_socket, player)
             elif command.lower() == 'mr':
-                player.data.mv_dir = 1
+                player.mv_dir = 1
                 send_command(client_socket, player)
             elif command.lower() == 'md':
-                player.data.mv_dir = 0
+                player.mv_dir = 0
                 send_command(client_socket, player)
             elif command.lower() == 'mu':
-                player.data.mv_dir = 3
+                player.mv_dir = 3
                 send_command(client_socket, player)
             elif command.lower() == 'al':
-                player.data.atk_dir = 2
+                player.atk_dir = 2
                 send_command(client_socket, player)
             elif command.lower() == 'ar':
-                player.data.atk_dir = 1
+                player.atk_dir = 1
                 send_command(client_socket, player)
             elif command.lower() == 'ad':
-                player.data.atk_dir = 0
+                player.atk_dir = 0
                 send_command(client_socket, player)
             elif command.lower() == 'au':
-                player.data.atk_dir = 3
+                player.atk_dir = 3
                 send_command(client_socket, player)
             elif command.lower() == 'j':
-                player.data.state = 3
+                player.state = 3
                 send_command(client_socket, player)
             elif command.lower() == 'c':
-                player.data.state = 2
+                player.state = 2
                 send_command(client_socket, player)
             else:
                 print("Invalid command.")
