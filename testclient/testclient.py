@@ -1,14 +1,11 @@
 import socket
-from ctypes import *
+import struct
 
 # Server address and port
 server_address = '192.168.1.42'
 server_port = 8080
-
-
 class Player:
     def __init__(self, player_id):
-
         self.player_id = player_id
         self.state = 0  # 0: alive, 1: dead, 2: crouch, 3: jump
         self.mv_dir = 0  # 0: down, 1: right, 2: left, 3: up
@@ -18,26 +15,30 @@ class Player:
         self.name = b'ABC\n'  # Initialize with a default name
 
     def pack_data(self):
-        data = []
-        data += [c_uint8(self.player_id)]
-        data += [c_uint8(self.state)]
-        data += [c_uint8(self.mv_dir)]
-        data += [c_uint8(self.atk_dir)]
-        data += [c_float(self.pos_x)]
-        data += [c_float(self.pos_y)]
-        data += [c_char * 4]
-        return data
+        # Pack data using struct
+        s = struct.pack(
+            'BBBBff',
+            self.player_id,
+            self.state,
+            self.mv_dir,
+            self.atk_dir,
+            self.pos_x,
+            self.pos_y
+        )
+        return s + self.name  # Append the name bytes directly
 
     def set_name(self, name):
-        # Ensure the name is exactly 4 bytes long, including the newline terminator
-        name = name.encode('utf-8')[:3] + b'\n'
-        self.data.name = (c_char * 4).from_buffer_copy(name)
+        # Ensure the name is exactly 3 characters long, then add a newline
+        self.name = name[:3].encode('ascii') + b'\n'
+
+# In the main function:
 
 def send_command(client_socket, player):
-    data = pack_data(player)
-    print(data)
+    data = player.pack_data()
+    for byte in data:
+        print(f'{hex(byte)}', end='|')
+    print()
     client_socket.sendall(data)
-    print(f"Sent command: {data.hex()}. Data length: {len(data)}")
 
 def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,7 +48,7 @@ def main():
         print(f"Connected to {server_address}:{server_port}")
 
         player = Player(1)  # Create a player with ID 1
-        player.set_name("XYZ")  # Set the player's name (up to 3 characters)
+        player.set_name("dan")  # Set the player's name (up to 3 characters)
 
         while True:
             print("Available commands:")
@@ -64,6 +65,7 @@ def main():
             print("disconnect : q")
 
             command = input("Enter a command: ")
+            command = command.strip()
 
             if command.lower() == 'q':
                 break

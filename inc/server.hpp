@@ -21,7 +21,7 @@ public:
     void SendToAll(const std::string& message);
     void SendToClient(const std::string& message, int clientId);
     std::vector<SocketPtr> CurrentClients();
-    void ProcessResponse(const std::string& data, int clientId);
+    void ProcessResponse(const std::vector<char>& data, int clientId);
     PlayerData DecodePlayerData(const std::string& data, int clientId); 
     inline int ClientCount() { return _clients.size(); }
 

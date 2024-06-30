@@ -21,14 +21,32 @@ PlayerData Server::DecodePlayerData(const std::string& data, int clientId) {
 
 }
 
-void Server::ProcessResponse(const std::string& data, int clientId) {
-    int data_length = data.length();
-    printf("data length: %d\n", data_length);
-    printf("Received data from client %x: ", clientId);
-    for (int i = 0; i < data_length; i++) {
-        printf("%02x ", static_cast<unsigned char>(data[i]));
+void Server::ProcessResponse(const std::vector<char>& data, int clientId) {
+    if (data.size() != 16) {
+        std::cerr << "Received invalid data size from client " << clientId << std::endl;
+        return;
     }
-    printf("\n");
+
+    // Extract the data
+    uint8_t player_id = data[0];
+    uint8_t state = data[1];
+    uint8_t mv_dir = data[2];
+    uint8_t atk_dir = data[3];
+    float pos_x = *reinterpret_cast<const float*>(&data[4]);
+    float pos_y = *reinterpret_cast<const float*>(&data[8]);
+    std::string name(data.begin() + 12, data.end());
+
+    // Process the data as needed
+    std::cout << "Received from client " << clientId << ": "
+              << "Player ID: " << static_cast<int>(player_id) << ", "
+              << "State: " << static_cast<int>(state) << ", "
+              << "Move Dir: " << static_cast<int>(mv_dir) << ", "
+              << "Attack Dir: " << static_cast<int>(atk_dir) << ", "
+              << "Pos X: " << pos_x << ", "
+              << "Pos Y: " << pos_y << ", "
+              << "Name: " << name << std::endl;
+
+    // Add your game logic here
 }
 
 // server.cpp
@@ -52,23 +70,36 @@ void Server::DoAccept() {
 // HANDLE CONNECTION WILL NOT SEND ANYTHING BACK TO THE CLIENT
 void Server::HandleConnection(SocketPtr socket, int clientId) {
     try {
-        boost::asio::streambuf buffer;
         while (true) {
-            // Read data until a newline character is encountered
-            boost::asio::read_until(*socket, buffer, '\n');
+            // Create a buffer to hold the fixed-size message
+            int expected_len = 16;
+            std::vector<char> buffer(expected_len);  // 16 bytes: 12 for data + 4 for name1
 
-            // Extract the data from the buffer
-            std::string data = boost::asio::buffer_cast<const char*>(buffer.data());
+            // Read the fixed-size message
+            boost::system::error_code error;
+            size_t len = boost::asio::read(*socket, boost::asio::buffer(buffer), boost::asio::transfer_exactly(expected_len), error);
 
-            // Remove the data from the buffer
-            buffer.consume(buffer.size());
+            if (static_cast<int>(len) != expected_len) {
+                std::cerr << "Received invalid data size from client " << clientId << std::endl;
+                continue;
+            }
+
+            if (error == boost::asio::error::eof) {
+                // Connection closed cleanly by peer
+                std::cout << "Client " << clientId << " disconnected." << std::endl;
+                break;
+            } else if (error) {
+                throw boost::system::system_error(error); // Some other error
+            }
 
             // Process the response
-            ProcessResponse(data, clientId);
+            ProcessResponse(buffer, clientId);
         }
     } catch (std::exception const& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error handling client " << clientId << ": " << e.what() << std::endl;
     }
+
+    std::cout << "Connection handler for client " << clientId << " exiting." << std::endl;
 }
 
 void Server::SendToAll(const std::string& message) {
