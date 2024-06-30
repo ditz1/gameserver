@@ -44,7 +44,8 @@ PlayerData Server::DecodePlayerData(const std::string& data, int clientId) {
 void Server::ProcessResponse(const char* data, int clientId, int len) {
     for (int i = 0; i < len; i++) {
         printf("%x | ", data[i]);
-    }    
+    }
+    printf("\n");    
 
 }
 
@@ -69,12 +70,19 @@ void Server::DoAccept() {
 // HANDLE CONNECTION WILL NOT SEND ANYTHING BACK TO THE CLIENT
 void Server::HandleConnection(SocketPtr socket, int clientId) {
     try {
-        std::vector<char> buffer(16);  // Use a fixed-size buffer
+        boost::asio::streambuf buffer;
         while (true) {
             boost::system::error_code error;
+        
+            // Read data until the delimiter byte (0xa) is found
+            size_t len = boost::asio::read_until(*socket, buffer, '\n', error);
+        
+            // Copy buffer to data
+            std::string data(boost::asio::buffer_cast<const char*>(buffer.data()), len);
+            std::cout << "Received " << len << " bytes from client " << clientId << std::endl;
             
-            size_t len = socket->read_some(boost::asio::buffer(buffer), error);
-
+            buffer.consume(len);
+        
             if (error) {
                 if (error == boost::asio::error::eof) {
                     std::cout << "Client " << clientId << " disconnected." << std::endl;
@@ -83,15 +91,9 @@ void Server::HandleConnection(SocketPtr socket, int clientId) {
                 }
                 break;
             }
-
-            //std::cout << "Raw data received from client " << clientId << ": ";
-            // for (size_t i = 0; i < len; ++i) {
-            //     printf("%02X ", static_cast<unsigned char>(buffer[i]));
-            // }
-            //std::cout << "got data" << std::endl;
-
-            // Process the response immediately
-            ProcessResponse(buffer.data(), clientId, len);
+        
+            // Process the response
+            ProcessResponse(data.data(), clientId, len);
         }
     } catch (std::exception const& e) {
         std::cerr << "Error handling client " << clientId << ": " << e.what() << std::endl;
