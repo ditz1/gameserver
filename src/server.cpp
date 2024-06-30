@@ -18,16 +18,8 @@ std::vector<SocketPtr> Server::CurrentClients() {
 }
 
 PlayerData Server::DecodePlayerData(const std::string& data, int clientId) {
-
-}
-
-void Server::ProcessResponse(const std::vector<char>& data, int clientId) {
-    if (data.size() != 16) {
-        std::cerr << "Received invalid data size from client " << clientId << std::endl;
-        return;
-    }
-
     // Extract the data
+    PlayerData player_data;
     uint8_t player_id = data[0];
     uint8_t state = data[1];
     uint8_t mv_dir = data[2];
@@ -46,7 +38,14 @@ void Server::ProcessResponse(const std::vector<char>& data, int clientId) {
               << "Pos Y: " << pos_y << ", "
               << "Name: " << name << std::endl;
 
-    // Add your game logic here
+    return player_data;
+}
+
+void Server::ProcessResponse(const char* data, int clientId, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%x | ", data[i]);
+    }    
+
 }
 
 // server.cpp
@@ -70,30 +69,29 @@ void Server::DoAccept() {
 // HANDLE CONNECTION WILL NOT SEND ANYTHING BACK TO THE CLIENT
 void Server::HandleConnection(SocketPtr socket, int clientId) {
     try {
+        std::vector<char> buffer(16);  // Use a fixed-size buffer
         while (true) {
-            // Create a buffer to hold the fixed-size message
-            int expected_len = 16;
-            std::vector<char> buffer(expected_len);  // 16 bytes: 12 for data + 4 for name1
-
-            // Read the fixed-size message
             boost::system::error_code error;
-            size_t len = boost::asio::read(*socket, boost::asio::buffer(buffer), boost::asio::transfer_exactly(expected_len), error);
+            
+            size_t len = socket->read_some(boost::asio::buffer(buffer), error);
 
-            if (static_cast<int>(len) != expected_len) {
-                std::cerr << "Received invalid data size from client " << clientId << std::endl;
-                continue;
-            }
-
-            if (error == boost::asio::error::eof) {
-                // Connection closed cleanly by peer
-                std::cout << "Client " << clientId << " disconnected." << std::endl;
+            if (error) {
+                if (error == boost::asio::error::eof) {
+                    std::cout << "Client " << clientId << " disconnected." << std::endl;
+                } else {
+                    throw boost::system::system_error(error);
+                }
                 break;
-            } else if (error) {
-                throw boost::system::system_error(error); // Some other error
             }
 
-            // Process the response
-            ProcessResponse(buffer, clientId);
+            //std::cout << "Raw data received from client " << clientId << ": ";
+            // for (size_t i = 0; i < len; ++i) {
+            //     printf("%02X ", static_cast<unsigned char>(buffer[i]));
+            // }
+            //std::cout << "got data" << std::endl;
+
+            // Process the response immediately
+            ProcessResponse(buffer.data(), clientId, len);
         }
     } catch (std::exception const& e) {
         std::cerr << "Error handling client " << clientId << ": " << e.what() << std::endl;
