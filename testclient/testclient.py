@@ -1,44 +1,43 @@
 import socket
-import struct
 from ctypes import *
 
 # Server address and port
 server_address = '192.168.1.42'
 server_port = 8080
 
-class PlayerData(Structure):
-    _fields_ = [
-        ("player_id", c_uint8),
-        ("state", c_uint8),
-        ("mv_dir", c_uint8),
-        ("atk_dir", c_uint8),
-        ("pos_x", c_float),
-        ("pos_y", c_float),
-        ("name", c_char * 4)
-    ]
 
 class Player:
     def __init__(self, player_id):
-        self.data = PlayerData()
-        self.data.player_id = player_id
-        self.data.state = 0  # 0: alive, 1: dead, 2: crouch, 3: jump
-        self.data.mv_dir = 0  # 0: down, 1: right, 2: left, 3: up
-        self.data.atk_dir = 0  # 0: not attacking, 1: right, 2: left, 3: up
-        self.data.pos_x = 0.0
-        self.data.pos_y = 0.0
-        self.data.name = b'\0' * 3 + b'\n'
+
+        self.player_id = player_id
+        self.state = 0  # 0: alive, 1: dead, 2: crouch, 3: jump
+        self.mv_dir = 0  # 0: down, 1: right, 2: left, 3: up
+        self.atk_dir = 0  # 0: not attacking, 1: right, 2: left, 3: up
+        self.pos_x = 0.0
+        self.pos_y = 0.0
+        self.name = b'ABC\n'  # Initialize with a default name
 
     def pack_data(self):
-        return bytearray(self.data)
+        data = []
+        data += [c_uint8(self.player_id)]
+        data += [c_uint8(self.state)]
+        data += [c_uint8(self.mv_dir)]
+        data += [c_uint8(self.atk_dir)]
+        data += [c_float(self.pos_x)]
+        data += [c_float(self.pos_y)]
+        data += [c_char * 4]
+        return data
 
     def set_name(self, name):
+        # Ensure the name is exactly 4 bytes long, including the newline terminator
         name = name.encode('utf-8')[:3] + b'\n'
-        self.data.name = (c_char * 4).from_buffer_copy(name) 
+        self.data.name = (c_char * 4).from_buffer_copy(name)
 
 def send_command(client_socket, player):
-    data = player.pack_data()
+    data = pack_data(player)
+    print(data)
     client_socket.sendall(data)
-    print(f"Sent command: player_id={player.data.player_id}, state={player.data.state}, mv_dir={player.data.mv_dir}, atk_dir={player.data.atk_dir}, pos_x={player.data.pos_x}, pos_y={player.data.pos_y}, name={player.data.name.decode('utf-8')}")
+    print(f"Sent command: {data.hex()}. Data length: {len(data)}")
 
 def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,7 +47,7 @@ def main():
         print(f"Connected to {server_address}:{server_port}")
 
         player = Player(1)  # Create a player with ID 1
-        player.data.name = b'ABC\n'  # Set the player's name (up to 4 characters)
+        player.set_name("XYZ")  # Set the player's name (up to 3 characters)
 
         while True:
             print("Available commands:")

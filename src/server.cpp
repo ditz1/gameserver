@@ -22,8 +22,13 @@ PlayerData Server::DecodePlayerData(const std::string& data, int clientId) {
 }
 
 void Server::ProcessResponse(const std::string& data, int clientId) {
-
-    std::cout << "Received data from client " << clientId << ": " << data << std::endl;
+    int data_length = data.length();
+    printf("data length: %d\n", data_length);
+    printf("Received data from client %x: ", clientId);
+    for (int i = 0; i < data_length; i++) {
+        printf("%02x ", static_cast<unsigned char>(data[i]));
+    }
+    printf("\n");
 }
 
 // server.cpp
