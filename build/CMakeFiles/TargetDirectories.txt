@@ -1,4 +1,0 @@
-/home/ditz/code/gameserver/build/CMakeFiles/rebuild_cache.dir
-/home/ditz/code/gameserver/build/CMakeFiles/edit_cache.dir
-/home/ditz/code/gameserver/build/CMakeFiles/clean_build.dir
-/home/ditz/code/gameserver/build/CMakeFiles/program.dir
