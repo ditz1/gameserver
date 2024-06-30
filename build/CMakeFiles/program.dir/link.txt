@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wextra   CMakeFiles/program.dir/src/main.cpp.o CMakeFiles/program.dir/src/server.cpp.o  -o program  -Wl,-rpath,/home/ditz/boost/stage/lib /home/ditz/boost/stage/lib/libboost_system.so -lpthread 

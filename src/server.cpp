@@ -3,6 +3,7 @@
 #include <memory>
 #include <thread>
 
+
 Server::Server(const std::string& address, unsigned short port)
     : _ioc(1), _acceptor(_ioc, {boost::asio::ip::make_address(address), port}) {
     DoAccept();
@@ -20,7 +21,6 @@ void Server::ProcessResponse(unsigned char data[2], int clientId) {
     res_data res;
     res.bytes.b1 = data[0];
     res.bytes.b0 = data[1];
-    //std::cout << "Client " << clientId << " sent: " << std::hex << res.d << std::endl;
     
     if (res.bytes.b0 == 0x61 && res.bytes.b0 == 0x62) {
         std::string response = "Client " + std::to_string(clientId) + " sent ab!";
@@ -33,6 +33,7 @@ void Server::ProcessResponse(unsigned char data[2], int clientId) {
     }
 }
 
+// server.cpp
 void Server::DoAccept() {
     _acceptor.async_accept([this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
         if (!ec) {
@@ -40,9 +41,11 @@ void Server::DoAccept() {
             auto clientSocket = std::make_shared<boost::asio::ip::tcp::socket>(std::move(socket));
             _clients.push_back(clientSocket);
             std::thread([this, clientId, clientSocket]() {
+                // Send a welcome message to the newly connected client
+                SendToClient("You have connected!", clientId);
                 HandleConnection(clientSocket, clientId);
             }).detach();
-            printf("new client connected: %d\n", clientId);
+            printf("New client connected: %d\n", clientId);
         }
         DoAccept();
     });
@@ -68,7 +71,7 @@ void Server::SendToAll(const std::string& message) {
 }
 
 void Server::SendToClient(const std::string& message, int clientId) {
-    if (clientId >= 0 && clientId < _clients.size()) {
+    if (clientId >= 0 && clientId < static_cast<int>(_clients.size())) {
         try {
             boost::asio::write(*_clients[clientId], boost::asio::buffer(message + "\n"));
         } catch (std::exception const& e) {
